@@ -246,7 +246,12 @@ function! fzf#vim#files(dir, ...)
     let args.dir = dir
     let args.options .= ' --prompt '.shellescape(dir)
   else
-    let args.options .= ' --prompt '.shellescape(s:shortpath())
+    try
+      let l:git_root = fugitive#repo().tree()
+      let args.options .= ' --prompt '.shellescape(l:git_root)
+    catch
+      let args.options .= ' --prompt '.shellescape(s:shortpath())
+    endtry
   endif
 
   return s:fzf('files', args, a:000)
@@ -317,7 +322,7 @@ function! fzf#vim#lines(...)
   return s:fzf('lines', {
   \ 'source':  lines,
   \ 'sink*':   s:function('s:line_handler'),
-  \ 'options': '+m --tiebreak=index --prompt "Lines> " --ansi --extended --nth='.nth.'.. --reverse --tabstop=1'.s:q(query)
+  \ 'options': '+m --tiebreak=index --prompt "Lines> " --ansi --extended --nth='.nth.'.. --tabstop=1'.s:q(query)
   \}, args)
 endfunction
 
@@ -349,7 +354,7 @@ function! fzf#vim#buffer_lines(...)
   return s:fzf('blines', {
   \ 'source':  s:buffer_lines(),
   \ 'sink*':   s:function('s:buffer_line_handler'),
-  \ 'options': '+m --tiebreak=index --prompt "BLines> " --ansi --extended --nth=2.. --reverse --tabstop=1'.s:q(query)
+  \ 'options': '+m --tiebreak=index --prompt "BLines> " --ansi --extended --nth=2.. --tabstop=1'.s:q(query)
   \}, args)
 endfunction
 
@@ -696,14 +701,32 @@ endfunction
 " query, [[tag commands], options]
 function! fzf#vim#buffer_tags(query, ...)
   let args = copy(a:000)
-  let tag_cmds = len(args) > 1 ? remove(args, 0) : [
-    \ printf('ctags -f - --sort=no --excmd=number --language-force=%s %s 2>/dev/null', &filetype, expand('%:S')),
-    \ printf('ctags -f - --sort=no --excmd=number %s 2>/dev/null', expand('%:S'))]
+  if len(args) > 1
+    let tag_cmds = remove(args, 0)
+  elseif exists('g:fzf_buftag_types') && has_key(g:fzf_buftag_types, &filetype)
+    let l:ft_config = g:fzf_buftag_types[&filetype]
+    if type(l:ft_config) == v:t_string
+      let tag_cmd = 'ctags -f - --sort=no --excmd=number ' . l:ft_config . ' ' . expand('%:S')
+    else
+      let tag_cmd = l:ft_config['bin'] . ' ' . l:ft_config['args'] . ' ' . expand('%:S')
+      if has_key(l:ft_config, 'filter_comment') && l:ft_config['filter_comment']
+        let tag_cmd .= " | grep -v '^!' "
+      endif
+      if has_key(l:ft_config, 'filter_empty_lines') && l:ft_config['filter_empty_lines']
+        let tag_cmd .= " | grep -v '^$' "
+      endif
+    endif
+    let tag_cmds = [tag_cmd]
+  else
+    let tag_cmds = len(args) > 1 ? remove(args, 0) : [
+      \ printf('ctags -f - --sort=no --excmd=number --language-force=%s %s 2>/dev/null', &filetype, expand('%:S')),
+      \ printf('ctags -f - --sort=no --excmd=number %s 2>/dev/null', expand('%:S'))]
+  endif
   try
     return s:fzf('btags', {
     \ 'source':  s:btags_source(tag_cmds),
     \ 'sink*':   s:function('s:btags_sink'),
-    \ 'options': '--reverse -m -d "\t" --with-nth 1,4.. -n 1 --prompt "BTags> "'.s:q(a:query)}, args)
+    \ 'options': '-m -d "\t" --with-nth 1,4.. -n 1 --prompt "BTags> "'.s:q(a:query)}, args)
   catch
     return s:warn(v:exception)
   endtry
@@ -748,21 +771,7 @@ endfunction
 
 function! fzf#vim#tags(query, ...)
   if empty(tagfiles())
-    call inputsave()
-    echohl WarningMsg
-    let gen = input('tags not found. Generate? (y/N) ')
-    echohl None
-    call inputrestore()
-    redraw
-    if gen =~? '^y'
-      call s:warn('Preparing tags')
-      call system(get(g:, 'fzf_tags_command', 'ctags -R'))
-      if empty(tagfiles())
-        return s:warn('Failed to create tags')
-      endif
-    else
-      return s:warn('No tags found')
-    endif
+    return s:warn('No tags found')
   endif
 
   let tagfile = tagfiles()[0]
@@ -779,7 +788,7 @@ function! fzf#vim#tags(query, ...)
   \ 'source':  proc.shellescape(fnamemodify(tagfile, ':t')),
   \ 'sink*':   s:function('s:tags_sink'),
   \ 'dir':     fnamemodify(tagfile, ':h'),
-  \ 'options': copt.'-m --tiebreak=begin --prompt "Tags> "'.s:q(a:query)}, a:000)
+  \ 'options': copt.'-m -d "\t" --with-nth 1,4.. -n 1 --prompt "Tags> "'.s:q(a:query)}, a:000)
 endfunction
 
 " ------------------------------------------------------------------
@@ -1022,7 +1031,7 @@ function! s:commits(buffer_local, args)
   let options = {
   \ 'source':  source,
   \ 'sink*':   s:function('s:commits_sink'),
-  \ 'options': '--ansi --multi --no-sort --tiebreak=index --reverse '.
+  \ 'options': '--ansi --multi --no-sort --tiebreak=index '.
   \   '--inline-info --prompt "'.command.'> " --bind=ctrl-s:toggle-sort '.
   \   '--expect='.expect_keys
   \ }
