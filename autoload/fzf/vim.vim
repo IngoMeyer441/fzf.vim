@@ -244,13 +244,13 @@ function! fzf#vim#files(dir, ...)
     endif
     let dir = substitute(a:dir, '/*$', '/', '')
     let args.dir = dir
-    let args.options .= ' --prompt '.shellescape(dir)
+    let args.options .= ' --prompt "'.shellescape(dir).'> "'
   else
     try
       let l:git_root = fugitive#repo().tree()
-      let args.options .= ' --prompt '.shellescape(l:git_root)
+      let args.options .= ' --prompt "'.shellescape(l:git_root).'> "'
     catch
-      let args.options .= ' --prompt '.shellescape(s:shortpath())
+      let args.options .= ' --prompt "'.shellescape(s:shortpath()).'> "'
     endtry
   endif
 
@@ -322,7 +322,7 @@ function! fzf#vim#lines(...)
   return s:fzf('lines', {
   \ 'source':  lines,
   \ 'sink*':   s:function('s:line_handler'),
-  \ 'options': '+m --tiebreak=index --prompt "Lines> " --ansi --extended --nth='.nth.'.. --tabstop=1'.s:q(query)
+  \ 'options': '+m --tiebreak=index --prompt "Lines> " --ansi --extended --nth='.nth.'.. --tabstop=1 --preview="which tagpreview >/dev/null && tagpreview --line ''''{}'''' '.&lines.' '.&columns.'" '.s:q(query)
   \}, args)
 endfunction
 
@@ -354,7 +354,7 @@ function! fzf#vim#buffer_lines(...)
   return s:fzf('blines', {
   \ 'source':  s:buffer_lines(),
   \ 'sink*':   s:function('s:buffer_line_handler'),
-  \ 'options': '+m --tiebreak=index --prompt "BLines> " --ansi --extended --nth=2.. --tabstop=1'.s:q(query)
+  \ 'options': '+m --tiebreak=index --prompt "BLines> " --ansi --extended --nth=2.. --tabstop=1 --preview="which tagpreview >/dev/null && tagpreview --bline ''''{}'''' '.&lines.' '.&columns.' '.expand('%').'" '.s:q(query)
   \}, args)
 endfunction
 
@@ -470,7 +470,7 @@ function! fzf#vim#gitfiles(args, ...)
     return s:fzf('gfiles', {
     \ 'source':  'git ls-files '.a:args,
     \ 'dir':     root,
-    \ 'options': '-m --prompt "GitFiles> "'
+    \ 'options': '-m --prompt "GitFiles> " '.get(g:, 'fzf_files_options', '')
     \}, a:000)
   endif
 
@@ -640,7 +640,8 @@ function! fzf#vim#grep(grep_command, with_column, ...)
   \ 'column':  a:with_column,
   \ 'options': '--ansi --delimiter : --nth '.textcol.',.. --prompt "'.capname.'> " '.
   \            '--multi --bind alt-a:select-all,alt-d:deselect-all '.
-  \            '--color hl:68,hl+:110'
+  \            '--color hl:68,hl+:110 '.
+  \            '--preview="which tagpreview >/dev/null && tagpreview --ag ''''{}'''' '.&lines.' '.&columns.'"'
   \}
   function! opts.sink(lines)
     return s:ag_handler(a:lines, self.column)
@@ -726,7 +727,7 @@ function! fzf#vim#buffer_tags(query, ...)
     return s:fzf('btags', {
     \ 'source':  s:btags_source(tag_cmds),
     \ 'sink*':   s:function('s:btags_sink'),
-    \ 'options': '-m -d "\t" --with-nth 1,4.. -n 1 --prompt "BTags> "'.s:q(a:query)}, args)
+    \ 'options': '-m -d "\t" --with-nth 1,4.. -n 1 --prompt "Tags> " --preview="which tagpreview >/dev/null && tagpreview ''''{}'''' '.&lines.' '.&columns.'" '.s:q(a:query)}, args)
   catch
     return s:warn(v:exception)
   endtry
@@ -788,7 +789,7 @@ function! fzf#vim#tags(query, ...)
   \ 'source':  proc.shellescape(fnamemodify(tagfile, ':t')),
   \ 'sink*':   s:function('s:tags_sink'),
   \ 'dir':     fnamemodify(tagfile, ':h'),
-  \ 'options': copt.'-m -d "\t" --with-nth 1,4.. -n 1 --prompt "Tags> "'.s:q(a:query)}, a:000)
+  \ 'options': copt.'-m -d "\t" --with-nth 1,4.. -n 1 --prompt "Tags> " --preview="which tagpreview >/dev/null && tagpreview ''''{}'''' '.&lines.' '.&columns.'" '.s:q(a:query)}, a:000)
 endfunction
 
 " ------------------------------------------------------------------
