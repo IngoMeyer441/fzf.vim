@@ -237,13 +237,18 @@ function! s:shortpath()
 endfunction
 
 function! fzf#vim#files(dir, ...)
+  if exists('g:fzf_paths_ignore')
+    let l:paths_ignore = '-path ''' . join(g:fzf_paths_ignore, ''' -prune -o -path ''') . ''' -prune -o '
+  else
+    let l:paths_ignore = ' '
+  endif
   if exists('g:fzf_files_ignore')
-    let l:files_ignore = '! -name ''' . join(g:fzf_files_ignore, ''' ! -name ''') . ''' '
+    let l:files_ignore = '-not -name ''' . join(g:fzf_files_ignore, ''' -not -name ''') . ''' '
   else
     let l:files_ignore = ' '
   endif
   let args = {
-    \ 'source': 'find . -type f ' . l:files_ignore . '| cut -c 3-',
+    \ 'source': 'find . ' . l:paths_ignore . '-type f ' . l:files_ignore . '-print | cut -c 3-',
     \ 'options': '-m --tiebreak=end,index --preview "(file --mime {} | grep -q ''text/'') && (pygmentize -gf terminal -P bg=dark {} || cat {}) 2> /dev/null" '.get(g:, 'fzf_files_options', '')
     \ }
   if !empty(a:dir)
