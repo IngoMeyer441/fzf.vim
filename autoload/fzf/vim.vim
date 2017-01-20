@@ -237,7 +237,7 @@ function! s:shortpath()
 endfunction
 
 function! fzf#vim#files(dir, ...)
-  let args = {'options': '-m '.get(g:, 'fzf_files_options', '')}
+    let args = {'options': '-m --tiebreak=end,index '.get(g:, 'fzf_files_options', '')}
   if !empty(a:dir)
     if !isdirectory(expand(a:dir))
       return s:warn('Invalid directory')
@@ -560,7 +560,7 @@ function! fzf#vim#buffers(...)
   return s:fzf('buffers', {
   \ 'source':  reverse(bufs),
   \ 'sink*':   s:function('s:bufopen'),
-  \ 'options': '+m -x --tiebreak=index --header-lines=1 --ansi -d "\t" -n 2,1..2 --prompt="Buf> "'.s:q(query)
+  \ 'options': '+m -x --tiebreak=end,index --header-lines=1 --ansi -d "\t" -n 2,1..2 --prompt="Buf> "'.s:q(query)
   \}, args)
 endfunction
 
