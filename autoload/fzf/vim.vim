@@ -244,7 +244,7 @@ function! fzf#vim#files(dir, ...)
   endif
   let args = {
     \ 'source': 'find . -type f ' . l:files_ignore . '| cut -c 3-',
-    \ 'options': '-m --tiebreak=end,index '.get(g:, 'fzf_files_options', '')
+    \ 'options': '-m --tiebreak=end,index --preview "(file --mime {} | grep -q ''text/'') && (pygmentize -gf terminal -P bg=dark {} || cat {}) 2> /dev/null" '.get(g:, 'fzf_files_options', '')
     \ }
   if !empty(a:dir)
     if !isdirectory(expand(a:dir))
