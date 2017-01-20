@@ -237,7 +237,15 @@ function! s:shortpath()
 endfunction
 
 function! fzf#vim#files(dir, ...)
-    let args = {'options': '-m --tiebreak=end,index '.get(g:, 'fzf_files_options', '')}
+  if exists('g:fzf_files_ignore')
+    let l:files_ignore = '! -name ''' . join(g:fzf_files_ignore, ''' ! -name ''') . ''' '
+  else
+    let l:files_ignore = ' '
+  endif
+  let args = {
+    \ 'source': 'find . -type f ' . l:files_ignore . '| cut -c 3-',
+    \ 'options': '-m --tiebreak=end,index '.get(g:, 'fzf_files_options', '')
+    \ }
   if !empty(a:dir)
     if !isdirectory(expand(a:dir))
       return s:warn('Invalid directory')
