@@ -247,7 +247,8 @@ function! fzf#vim#files(dir, ...)
     let args.options .= ' --prompt "'.shellescape(dir).'> "'
   else
     try
-      let l:git_root = fugitive#repo().tree()
+      let l:git_root = substitute(fugitive#repo().tree(), '/*$', '/', '')
+      let args.dir = l:git_root
       let args.options .= ' --prompt "'.shellescape(l:git_root).'> "'
     catch
       let args.options .= ' --prompt "'.shellescape(s:shortpath()).'> "'
