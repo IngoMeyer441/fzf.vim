@@ -668,7 +668,7 @@ function! fzf#vim#grep(grep_command, with_column, ...)
   \ 'options': '--ansi --delimiter : --nth '.textcol.',.. --prompt "'.capname.'> " '.
   \            '--multi --bind alt-a:select-all,alt-d:deselect-all '.
   \            '--color hl:68,hl+:110 '.
-  \            s:get_toggle_preview_key().'--preview="which tagpreview >/dev/null && tagpreview --ag ''''{}'''' '.&lines.' '.&columns.'"'
+  \            s:get_toggle_preview_key().'--preview "(file --mime {1} | grep -q ''text/'') && which tagpreview >/dev/null && tagpreview --ag ''''{}'''' '.&lines.' '.&columns.'"'
   \}
   function! opts.sink(lines)
     return s:ag_handler(a:lines, self.column)
