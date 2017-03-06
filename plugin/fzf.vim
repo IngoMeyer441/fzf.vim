@@ -52,6 +52,7 @@ call s:defs([
 \'command!      -bang -nargs=* Ag                        call fzf#vim#ag(<q-args>, <bang>0)',
 \'command!      -bang -nargs=* Tags                      call fzf#vim#tags(<q-args>, <bang>0)',
 \'command!      -bang -nargs=* BTags                     call fzf#vim#buffer_tags(<q-args>, <bang>0)',
+\'command!      -bang -nargs=* Words                     call fzf#vim#words(<q-args>, <bang>0)',
 \'command! -bar -bang Snippets                           call fzf#vim#snippets(<bang>0)',
 \'command! -bar -bang Commands                           call fzf#vim#commands(<bang>0)',
 \'command! -bar -bang Marks                              call fzf#vim#marks(<bang>0)',

@@ -1086,6 +1086,50 @@ function! fzf#vim#buffer_commits(...)
 endfunction
 
 " ------------------------------------------------------------------
+" Words
+" ------------------------------------------------------------------
+function! s:word_handler(word)
+  let @/ = a:word
+  normal n
+endfunction
+
+function! s:sort_by_val(a, b) dict
+  if self[a:a] == self[a:b]
+    return 0
+  elseif self[a:a] < self[a:b]
+    return -1
+  else
+    return 1
+  endif
+endfunction
+
+function! s:words()
+  let l:word_to_frequency = {}
+  for line in getline(1, "$")
+    let l:words = split(line, '\W\+')
+    for word in l:words
+      if has_key(l:word_to_frequency, word)
+        let l:word_to_frequency[word] += 1
+      else
+        let l:word_to_frequency[word] = 1
+      endif
+    endfor
+  endfor
+  let l:word_list = reverse(sort(keys(l:word_to_frequency), s:function('s:sort_by_val'), l:word_to_frequency))
+  return l:word_list
+endfunction
+
+function! fzf#vim#words(...)
+  let [query, args] = (a:0 && type(a:1) == type('')) ?
+        \ [a:1, a:000[1:]] : ['', a:000]
+  return s:fzf('words', {
+  \ 'source':  s:words(),
+  \ 'sink':   s:function('s:word_handler'),
+  \ 'options': '+m --tiebreak=begin --prompt "Words> " --extended '.s:q(query)
+  \}, args)
+endfunction
+
+" ------------------------------------------------------------------
 " fzf#vim#maps(mode, opts[with count and op])
 " ------------------------------------------------------------------
 function! s:align_pairs(list)
