@@ -1088,7 +1088,7 @@ endfunction
 " Words
 " ------------------------------------------------------------------
 function! s:word_handler(word)
-  let @/ = a:word
+  let @/ = '\<' . a:word . '\>'
   normal n
 endfunction
 
