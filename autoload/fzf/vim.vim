@@ -755,7 +755,7 @@ function! fzf#vim#buffer_tags(query, ...)
     return s:fzf('btags', {
     \ 'source':  s:btags_source(tag_cmds),
     \ 'sink*':   s:function('s:btags_sink'),
-    \ 'options': '-m -d "\t" --with-nth 1,4.. -n 1 --prompt "Tags> " '.s:get_toggle_preview_key().'--preview="which tagpreview >/dev/null && tagpreview ''''{}'''' '.&lines.' '.&columns.'" '.s:q(a:query)}, args)
+    \ 'options': '-m -d "\t" --with-nth 1,4.. -n 1 --tiebreak=begin --prompt "BTags> " '.s:get_toggle_preview_key().'--preview="which tagpreview >/dev/null && tagpreview ''''{}'''' '.&lines.' '.&columns.'" '.s:q(a:query)}, args)
   catch
     return s:warn(v:exception)
   endtry
