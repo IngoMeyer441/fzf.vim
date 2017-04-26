@@ -260,7 +260,7 @@ function! fzf#vim#files(dir, ...)
   endif
   let args = {
     \ 'source': 'find . ' . l:paths_ignore . '-type f ' . l:files_ignore . '-print | cut -c 3-',
-    \ 'options': '-m --tiebreak=end,index '.s:get_toggle_preview_key().'--preview "(file --mime {} | grep -q ''text/'') && (pygmentize -gf terminal -P bg=dark {} || cat {}) 2> /dev/null" '.get(g:, 'fzf_files_options', '')
+    \ 'options': '-m --tiebreak=end,length '.s:get_toggle_preview_key().'--preview "(file --mime {} | grep -q ''text/'') && (pygmentize -gf terminal -P bg=dark {} || cat {}) 2> /dev/null" '.get(g:, 'fzf_files_options', '')
     \ }
   if !empty(a:dir)
     if !isdirectory(expand(a:dir))
@@ -505,7 +505,7 @@ function! fzf#vim#gitfiles(args, ...)
   let wrapped = fzf#wrap({
   \ 'source':  'git -c color.status=always status --short --untracked-files=all',
   \ 'dir':     root,
-  \ 'options': '--ansi --multi --nth 2..,.. --tiebreak=index --prompt "GitFiles?> " '.s:get_toggle_preview_key().'--preview ''sh -c "(git diff --color=always -- {-1} | sed 1,4d; cat {-1}) | head -500"'''
+  \ 'options': '--ansi --multi --nth 2..,.. --tiebreak=end,length --prompt "GitFiles?> " '.s:get_toggle_preview_key().'--preview ''sh -c "(git diff --color=always -- {-1} | sed 1,4d; cat {-1}) | head -500"'''
   \})
   call s:remove_layout(wrapped)
   let wrapped.common_sink = remove(wrapped, 'sink*')
@@ -584,7 +584,7 @@ function! fzf#vim#buffers(...)
   return s:fzf('buffers', {
   \ 'source':  reverse(bufs),
   \ 'sink*':   s:function('s:bufopen'),
-  \ 'options': '+m -x --tiebreak=end,index --header-lines=1 --ansi -d "\t" -n 2,1..2 --prompt="Buf> "'.s:q(query)
+  \ 'options': '+m -x --tiebreak=end,length --header-lines=1 --ansi -d "\t" -n 2,1..2 --prompt="Buf> "'.s:q(query)
   \}, args)
 endfunction
 
@@ -755,7 +755,7 @@ function! fzf#vim#buffer_tags(query, ...)
     return s:fzf('btags', {
     \ 'source':  s:btags_source(tag_cmds),
     \ 'sink*':   s:function('s:btags_sink'),
-    \ 'options': '-m -d "\t" --with-nth 1,4.. -n 1 --tiebreak=begin --prompt "BTags> " '.s:get_toggle_preview_key().'--preview="which tagpreview >/dev/null && tagpreview ''''{}'''' '.&lines.' '.&columns.'" '.s:q(a:query)}, args)
+    \ 'options': '-m -d "\t" --with-nth 1,4.. -n 1 --tiebreak=begin,length --prompt "BTags> " '.s:get_toggle_preview_key().'--preview="which tagpreview >/dev/null && tagpreview ''''{}'''' '.&lines.' '.&columns.'" '.s:q(a:query)}, args)
   catch
     return s:warn(v:exception)
   endtry
@@ -819,7 +819,7 @@ function! fzf#vim#tags(query, ...)
   return s:fzf('tags', {
   \ 'source':  shellescape(s:bin.tags).' '.join(map(tagfiles, 'shellescape(fnamemodify(v:val, ":p"))')),
   \ 'sink*':   s:function('s:tags_sink'),
-  \ 'options': opts.'--nth 1..2 --with-nth ..-2 -m --tiebreak=begin --prompt "Tags> " '.s:get_toggle_preview_key().'--preview="which tagpreview >/dev/null && tagpreview ''''{}'''' '.&lines.' '.&columns.'" '.s:q(a:query)}, a:000)
+  \ 'options': opts.'--nth 1..2 --with-nth ..-2 -m --tiebreak=begin,length --prompt "Tags> " '.s:get_toggle_preview_key().'--preview="which tagpreview >/dev/null && tagpreview ''''{}'''' '.&lines.' '.&columns.'" '.s:q(a:query)}, a:000)
 endfunction
 
 " ------------------------------------------------------------------
@@ -937,7 +937,7 @@ function! fzf#vim#marks(...)
   return s:fzf('marks', {
   \ 'source':  extend(list[0:0], map(list[1:], 's:format_mark(v:val)')),
   \ 'sink*':   s:function('s:mark_sink'),
-  \ 'options': '+m -x --ansi --tiebreak=index --header-lines 1 --tiebreak=begin --prompt "Marks> "'}, a:000)
+  \ 'options': '+m -x --ansi --header-lines 1 --tiebreak=begin --prompt "Marks> "'}, a:000)
 endfunction
 
 " ------------------------------------------------------------------
@@ -1124,7 +1124,7 @@ function! fzf#vim#words(...)
   return s:fzf('words', {
   \ 'source':  s:words(),
   \ 'sink':   s:function('s:word_handler'),
-  \ 'options': '+m --tiebreak=begin --prompt "Words> " --extended '.s:q(query)
+  \ 'options': '+m --tiebreak=begin,length --prompt "Words> " --extended '.s:q(query)
   \}, args)
 endfunction
 
