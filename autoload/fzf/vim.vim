@@ -260,7 +260,7 @@ function! fzf#vim#files(dir, ...)
   endif
   let args = {
     \ 'source': 'find . ' . l:paths_ignore . '-type f ' . l:files_ignore . '-print | cut -c 3-',
-    \ 'options': '-m --tiebreak=begin,length --nth -1,.. --delimiter "/" '.s:get_toggle_preview_key().'--preview "(file --mime {} | grep -q ''text/'') && (pygmentize -gf terminal -P bg=dark {} || cat {}) 2> /dev/null" '.get(g:, 'fzf_files_options', '')
+    \ 'options': '-m --tiebreak=length '.s:get_toggle_preview_key().'--preview "(file --mime {} | grep -q ''text/'') && (pygmentize -gf terminal -P bg=dark {} || cat {}) 2> /dev/null" '.get(g:, 'fzf_files_options', '')
     \ }
   if !empty(a:dir)
     if !isdirectory(expand(a:dir))
