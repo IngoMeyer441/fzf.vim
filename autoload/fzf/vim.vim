@@ -290,10 +290,16 @@ function! fzf#vim#files(dir, ...)
     let dir = substitute(a:dir, '[/\\]*$', slash, '')
     let args.dir = dir
   else
-    let dir = s:shortpath()
+    try
+      let l:git_root = substitute(fugitive#repo().tree(), '/*$', '/', '')
+      let dir = l:git_root
+      let args.dir = dir
+    catch
+      let dir = s:shortpath()
+    endtry
   endif
 
-  let args.options = ['-m', '--prompt', dir]
+  let args.options = ['-m', '--prompt', dir . '> ']
   call s:merge_opts(args, get(g:, 'fzf_files_options', []))
   return s:fzf('files', args, a:000)
 endfunction
