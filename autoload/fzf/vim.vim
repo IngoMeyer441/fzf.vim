@@ -32,7 +32,7 @@ let s:is_win = has('win32') || has('win64')
 let s:layout_keys = ['window', 'up', 'down', 'left', 'right']
 let s:bin_dir = expand('<sfile>:h:h:h').'/bin/'
 let s:bin = {
-\ 'preview': s:bin_dir.(executable('ruby') ? 'preview.rb' : 'preview.sh'),
+\ 'preview': s:bin_dir.(!s:is_win && executable('ruby') ? 'preview.rb' : 'preview.sh'),
 \ 'tags':    s:bin_dir.'tags.pl' }
 let s:TYPE = {'dict': type({}), 'funcref': type(function('call')), 'string': type(''), 'list': type([])}
 if s:is_win
@@ -41,7 +41,7 @@ if s:is_win
   else
     let s:bin.preview = fnamemodify(s:bin.preview, ':8')
   endif
-  let s:bin.preview = escape(s:bin.preview, '\')
+  let s:bin.preview = 'bash '.escape(s:bin.preview, '\')
 endif
 
 function! s:merge_opts(dict, eopts)
@@ -204,10 +204,6 @@ function! s:fzf(name, opts, extra)
   let eopts  = has_key(extra, 'options') ? remove(extra, 'options') : ''
   let merged = extend(copy(a:opts), extra)
   call s:merge_opts(merged, eopts)
-  let mopts = get(merged, 'options', '')
-  if s:is_win && empty(get(merged, 'source', '')) && empty($FZF_DEFAULT_COMMAND) && (type(mopts) == s:TYPE.list ? join(mopts) : mopts) =~# s:bin.preview
-    return s:warn('preview script is incompatible with the default command in Windows')
-  endif
   return fzf#run(s:wrap(a:name, merged, bang))
 endfunction
 
@@ -275,7 +271,10 @@ endfunction
 " Files
 " ------------------------------------------------------------------
 function! s:shortpath()
-  let short = pathshorten(fnamemodify(getcwd(), ':~:.'))
+  let short = fnamemodify(getcwd(), ':~:.')
+  if !has('win32unix')
+    let short = pathshorten(short)
+  endif
   let slash = (s:is_win && !&shellslash) ? '\' : '/'
   return empty(short) ? '~'.slash : short . (short =~ escape(slash, '\').'$' ? '' : slash)
 endfunction
@@ -299,7 +298,7 @@ function! fzf#vim#files(dir, ...)
     endtry
   endif
 
-  let args.options = ['-m', '--prompt', dir . '> ']
+  let args.options = ['-m', '--prompt', strwidth(dir) < &columns / 2 - 20 ? dir : '> ']
   call s:merge_opts(args, get(g:, 'fzf_files_options', []))
   return s:fzf('files', args, a:000)
 endfunction
