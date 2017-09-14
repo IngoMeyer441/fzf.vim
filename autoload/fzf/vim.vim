@@ -755,7 +755,7 @@ function! fzf#vim#rg_raw(command_suffix, ...)
   if !executable('rg')
     return s:warn('rg is not found')
   endif
-  return call('fzf#vim#grep', extend(['rg --column --color always '.a:command_suffix, 1], a:000))
+  return call('fzf#vim#grep', extend(['rg --column --color always --colors "path:fg:green" --colors "path:style:bold" --colors "line:fg:yellow" --colors "line:style:bold" --colors "match:fg:black" --colors "match:bg:yellow" --colors "match:style:nobold" '.a:command_suffix, 1], a:000))
 endfunction
 
 " command, with_column, [options]
