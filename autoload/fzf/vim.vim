@@ -697,6 +697,96 @@ function! fzf#vim#grep(grep_command, with_column, ...)
 endfunction
 
 " ------------------------------------------------------------------
+" Rg
+" ------------------------------------------------------------------
+function! s:rg_to_qf(line, with_column)
+  let parts = split(a:line, ':')
+  let text = join(parts[(a:with_column ? 3 : 2):], ':')
+  let dict = {'filename': &acd ? fnamemodify(parts[0], ':p') : parts[0], 'lnum': parts[1], 'text': text}
+  if a:with_column
+    let dict.col = parts[2]
+  endif
+  return dict
+endfunction
+
+function! s:rg_handler(lines, with_column)
+  if len(a:lines) < 2
+    return
+  endif
+
+  let cmd = s:action_for(a:lines[0], 'e')
+  let list = map(filter(a:lines[1:], 'len(v:val)'), 's:rg_to_qf(v:val, a:with_column)')
+  if empty(list)
+    return
+  endif
+
+  let first = list[0]
+  try
+    call s:open(cmd, first.filename)
+    execute first.lnum
+    if a:with_column
+      execute 'normal!' first.col.'|'
+    endif
+    normal! zz
+  catch
+  endtry
+
+  if len(list) > 1
+    call setqflist(list)
+    copen
+    wincmd p
+  endif
+endfunction
+
+" query, [[rg options], options]
+function! fzf#vim#rg(query, ...)
+  if type(a:query) != s:TYPE.string
+    return s:warn('Invalid query argument')
+  endif
+  let query = empty(a:query) ? '^(?=.)' : a:query
+  let args = copy(a:000)
+  let rg_opts = len(args) > 1 && type(args[0]) == s:TYPE.string ? remove(args, 0) : ''
+  let command = rg_opts . ' ' . fzf#shellescape(query)
+  return call('fzf#vim#rg_raw', insert(args, command, 0))
+endfunction
+
+" rg command suffix, [options]
+function! fzf#vim#rg_raw(command_suffix, ...)
+  if !executable('rg')
+    return s:warn('rg is not found')
+  endif
+  return call('fzf#vim#grep', extend(['rg --column --color always '.a:command_suffix, 1], a:000))
+endfunction
+
+" command, with_column, [options]
+function! fzf#vim#grep(grep_command, with_column, ...)
+  let words = []
+  for word in split(a:grep_command)
+    if word !~# '^[a-z]'
+      break
+    endif
+    call add(words, word)
+  endfor
+  let words   = empty(words) ? ['grep'] : words
+  let name    = join(words, '-')
+  let capname = join(map(words, 'toupper(v:val[0]).v:val[1:]'), '')
+  let textcol = a:with_column ? '4..' : '3..'
+  let opts = {
+  \ 'source':  a:grep_command,
+  \ 'column':  a:with_column,
+  \ 'options': '--ansi --delimiter : --nth '.textcol.',.. --prompt "'.capname.'> " '.
+  \            '--multi --bind alt-a:select-all,alt-d:deselect-all '.
+  \            '--color hl:68,hl+:110 '.
+  \            s:get_toggle_preview_key().'--preview "(file --mime {1} | grep -q ''text/'') && which tagpreview >/dev/null && tagpreview --rg ''''{}'''' '.&lines.' '.&columns.'"'
+  \}
+  function! opts.sink(lines)
+    return s:rg_handler(a:lines, self.column)
+  endfunction
+  let opts['sink*'] = remove(opts, 'sink')
+  return s:fzf(name, opts, a:000)
+endfunction
+
+" ------------------------------------------------------------------
 " BTags
 " ------------------------------------------------------------------
 function! s:btags_source(tag_cmds)
