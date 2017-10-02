@@ -838,11 +838,29 @@ endfunction
 " query, [[tag commands], options]
 function! fzf#vim#buffer_tags(query, ...)
   let args = copy(a:000)
-  let escaped = fzf#shellescape(expand('%'))
-  let null = s:is_win ? 'nul' : '/dev/null'
-  let tag_cmds = (len(args) > 1 && type(args[0]) != type({})) ? remove(args, 0) : [
-    \ printf('ctags -f - --sort=no --excmd=number --language-force=%s %s 2> %s', &filetype, escaped, null),
-    \ printf('ctags -f - --sort=no --excmd=number %s 2> %s', escaped, null)]
+  if len(args) > 1 && type(args[0]) != type({})
+    let tag_cmds = remove(args, 0)
+  elseif exists('g:fzf_buftag_types') && has_key(g:fzf_buftag_types, &filetype)
+    let l:ft_config = g:fzf_buftag_types[&filetype]
+    if type(l:ft_config) == v:t_string
+      let tag_cmd = 'ctags -f - --sort=no --excmd=number ' . l:ft_config . ' ' . expand('%:S')
+    else
+      let tag_cmd = l:ft_config['bin'] . ' ' . l:ft_config['args'] . ' ' . expand('%:S')
+      if has_key(l:ft_config, 'filter_comment') && l:ft_config['filter_comment']
+        let tag_cmd .= " | grep -v '^!' "
+      endif
+      if has_key(l:ft_config, 'filter_empty_lines') && l:ft_config['filter_empty_lines']
+        let tag_cmd .= " | grep -v '^$' "
+      endif
+    endif
+    let tag_cmds = [tag_cmd]
+  else
+    let escaped = fzf#shellescape(expand('%'))
+    let null = s:is_win ? 'nul' : '/dev/null'
+    let tag_cmds = [
+      \ printf('ctags -f - --sort=no --excmd=number --language-force=%s %s 2> %s', &filetype, escaped, null),
+      \ printf('ctags -f - --sort=no --excmd=number %s 2> %s', escaped, null)]
+  endif
   if type(tag_cmds) != type([])
     let tag_cmds = [tag_cmds]
   endif
