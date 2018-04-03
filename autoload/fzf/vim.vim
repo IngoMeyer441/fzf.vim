@@ -760,7 +760,13 @@ function! fzf#vim#rg(query, ...)
   let query = empty(a:query) ? '^(?=.)' : a:query
   let args = copy(a:000)
   let rg_opts = len(args) > 1 && type(args[0]) == s:TYPE.string ? remove(args, 0) : ''
-  let command = rg_opts . ' ' . fzf#shellescape(query)
+  try
+    let l:git_root = substitute(fugitive#repo().tree(), '/*$', '/', '')
+    let dir = l:git_root
+  catch
+    let dir = s:shortpath()
+  endtry
+  let command = rg_opts . ' ' . fzf#shellescape(query) . ' ' . dir
   return call('fzf#vim#rg_raw', insert(args, command, 0))
 endfunction
 
