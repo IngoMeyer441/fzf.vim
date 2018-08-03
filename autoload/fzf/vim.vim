@@ -270,14 +270,6 @@ function! fzf#vim#_uniq(list)
   return ret
 endfunction
 
-function! s:get_toggle_preview_key()
-  if exists('g:fzf_toggle_preview_key')
-    return '--bind='.g:fzf_toggle_preview_key.':toggle-preview '
-  else
-    return ''
-  endif
-endfunction
-
 " ------------------------------------------------------------------
 " Files
 " ------------------------------------------------------------------
@@ -379,7 +371,7 @@ function! fzf#vim#lines(...)
   return s:fzf('lines', {
   \ 'source':  lines,
   \ 'sink*':   s:function('s:line_handler'),
-  \ 'options': '+m --tiebreak=index --prompt "Lines> " --ansi --extended --nth='.nth.'.. --layout=reverse-list --tabstop=1 '.s:get_toggle_preview_key().'--preview="which tagpreview >/dev/null && tagpreview --line ''''{}'''' '.&lines.' '.&columns.'" '.s:q(query)
+  \ 'options': ['+m', '--tiebreak=index', '--prompt', 'Lines> ', '--ansi', '--extended', '--nth='.nth.'..', '--layout=reverse-list', '--tabstop=1', '--preview', 'which tagpreview >/dev/null && tagpreview --line {} '.&lines.' '.&columns, '--query', query]
   \}, args)
 endfunction
 
@@ -411,7 +403,7 @@ function! fzf#vim#buffer_lines(...)
   return s:fzf('blines', {
   \ 'source':  s:buffer_lines(),
   \ 'sink*':   s:function('s:buffer_line_handler'),
-  \ 'options': '+m --tiebreak=index --prompt "BLines> " --ansi --extended --nth=2.. --layout=reverse-list --tabstop=1 '.s:get_toggle_preview_key().'--preview="which tagpreview >/dev/null && tagpreview --bline ''''{}'''' '.&lines.' '.&columns.' '.expand('%').'" '.s:q(query)
+  \ 'options': ['+m', '--tiebreak=index', '--prompt', 'BLines> ', '--ansi', '--extended', '--nth=2..', '--layout=reverse-list', '--tabstop=1', '--preview', 'which tagpreview >/dev/null && tagpreview --bline {} '.&lines.' '.&columns.' '.expand('%'), '--query', query]
   \}, args)
 endfunction
 
@@ -541,7 +533,7 @@ function! fzf#vim#gitfiles(args, ...)
   let wrapped = fzf#wrap({
   \ 'source':  'git -c color.status=always status --short --untracked-files=all',
   \ 'dir':     root,
-  \ 'options': '--ansi --multi --nth 2..,.. --tiebreak=end,length --prompt "GitFiles?> " '.s:get_toggle_preview_key().'--preview ''sh -c "(git diff --color=always -- {-1} | sed 1,4d; cat {-1}) | head -500"'''
+  \ 'options': ['--ansi', '--multi', '--nth', '2..,..', '--tiebreak=end,length', '--prompt', 'GitFiles?> ', '--preview', 'sh -c "(git diff --color=always -- {-1} | sed 1,4d; cat {-1}) | head -500"']
   \})
   call s:remove_layout(wrapped)
   let wrapped.common_sink = remove(wrapped, 'sink*')
@@ -704,10 +696,10 @@ function! fzf#vim#grep(grep_command, with_column, ...)
   let opts = {
   \ 'source':  a:grep_command,
   \ 'column':  a:with_column,
-  \ 'options': '--ansi --delimiter : --nth '.textcol.',.. --prompt "'.capname.'> " '.
-  \            '--multi --bind alt-a:select-all,alt-d:deselect-all '.
-  \            '--color hl:68,hl+:110 '.
-  \            s:get_toggle_preview_key().'--preview "(file --mime {1} | grep -q ''text/'') && which tagpreview >/dev/null && tagpreview --ag ''''{}'''' '.&lines.' '.&columns.'"'
+  \ 'options': ['--ansi', '--delimiter', ':', '--nth', textcol.',..', '--prompt', capname.'> ',
+  \             '--multi', '--bind', 'alt-a:select-all,alt-d:deselect-all',
+  \             '--color', 'hl:68,hl+:110',
+  \             '--preview', '(file --mime {1} | grep -q ''text/'') && which tagpreview >/dev/null && tagpreview --ag {} '.&lines.' '.&columns]
   \}
   function! opts.sink(lines)
     return s:ag_handler(a:lines, self.column)
@@ -784,34 +776,6 @@ function! fzf#vim#rg_raw(command_suffix, ...)
   return call('fzf#vim#grep', extend(['rg --column --smart-case --color always --colors "path:fg:green" --colors "path:style:bold" --colors "line:fg:yellow" --colors "line:style:bold" --colors "match:fg:black" --colors "match:bg:yellow" --colors "match:style:nobold" '.a:command_suffix, 1], a:000))
 endfunction
 
-" command, with_column, [options]
-function! fzf#vim#grep(grep_command, with_column, ...)
-  let words = []
-  for word in split(a:grep_command)
-    if word !~# '^[a-z]'
-      break
-    endif
-    call add(words, word)
-  endfor
-  let words   = empty(words) ? ['grep'] : words
-  let name    = join(words, '-')
-  let capname = join(map(words, 'toupper(v:val[0]).v:val[1:]'), '')
-  let textcol = a:with_column ? '4..' : '3..'
-  let opts = {
-  \ 'source':  a:grep_command,
-  \ 'column':  a:with_column,
-  \ 'options': '--ansi --delimiter : --nth '.textcol.',.. --prompt "'.capname.'> " '.
-  \            '--multi --bind alt-a:select-all,alt-d:deselect-all '.
-  \            '--color hl:68,hl+:110 '.
-  \            s:get_toggle_preview_key().'--preview "(file --mime {1} | grep -q ''text/'') && which tagpreview >/dev/null && tagpreview --rg ''''{}'''' '.&lines.' '.&columns.'"'
-  \}
-  function! opts.sink(lines)
-    return s:rg_handler(a:lines, self.column)
-  endfunction
-  let opts['sink*'] = remove(opts, 'sink')
-  return s:fzf(name, opts, a:000)
-endfunction
-
 " ------------------------------------------------------------------
 " BTags
 " ------------------------------------------------------------------
@@ -857,10 +821,6 @@ function! s:btags_sink(lines)
   normal! zz
 endfunction
 
-function! s:q(query)
-  return ' --query '.fzf#shellescape(a:query)
-endfunction
-
 " query, [[tag commands], options]
 function! fzf#vim#buffer_tags(query, ...)
   let args = copy(a:000)
@@ -894,7 +854,7 @@ function! fzf#vim#buffer_tags(query, ...)
     return s:fzf('btags', {
     \ 'source':  s:btags_source(tag_cmds),
     \ 'sink*':   s:function('s:btags_sink'),
-    \ 'options': '--layout=reverse-list -m -d "\t" --with-nth 1,4.. -n 1 --tiebreak=begin,length --prompt "BTags> " '.s:get_toggle_preview_key().'--preview="which tagpreview >/dev/null && tagpreview ''''{}'''' '.&lines.' '.&columns.'" '.s:q(a:query)}, args)
+    \ 'options': ['--layout=reverse-list', '-m', '-d', '\t', '--with-nth', '1,4..', '-n', '1', '--tiebreak=begin,length', '--prompt', 'BTags> ', '--preview', 'which tagpreview >/dev/null && tagpreview {} '.&lines.' '.&columns, '--query', a:query]}, args)
   catch
     return s:warn(v:exception)
   endtry
@@ -956,12 +916,12 @@ function! fzf#vim#tags(query, ...)
       break
     endif
   endfor
-  let opts = v2_limit < 0 ? '--algo=v1 ' : ''
+  let opts = v2_limit < 0 ? ['--algo=v1'] : []
 
   return s:fzf('tags', {
   \ 'source':  'perl '.fzf#shellescape(s:bin.tags).' '.join(map(tagfiles, 'fzf#shellescape(fnamemodify(v:val, ":p"))')),
   \ 'sink*':   s:function('s:tags_sink'),
-  \ 'options': opts.'--nth 1..2 -m --tiebreak=begin,length --prompt "Tags> " '.s:get_toggle_preview_key().'--preview="which tagpreview >/dev/null && tagpreview ''''{}'''' '.&lines.' '.&columns.'" '.s:q(a:query)}, a:000)
+  \ 'options': extend(opts, ['--nth', '1..2', '-m', '--tiebreak=begin,length', '--prompt', 'Tags> ', '--preview', 'which tagpreview >/dev/null && tagpreview {} '.&lines.' '.&columns, '--query', a:query])}, a:000)
 endfunction
 
 " ------------------------------------------------------------------
@@ -1295,7 +1255,7 @@ function! fzf#vim#words(...)
   return s:fzf('words', {
   \ 'source':  s:words(),
   \ 'sink':   s:function('s:word_handler'),
-  \ 'options': '+m --tiebreak=begin,length --prompt "Words> " --extended '.s:q(query)
+  \ 'options': ['+m', '--tiebreak=begin,length', '--prompt', 'Words> ', '--extended', '--query', query]
   \}, args)
 endfunction
 
