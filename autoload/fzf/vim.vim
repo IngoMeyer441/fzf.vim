@@ -491,7 +491,7 @@ function! s:history_sink(type, lines)
   if key == 'ctrl-e'
     call histadd(a:type, item)
     redraw
-    call feedkeys(a:type."\<up>")
+    call feedkeys(a:type."\<up>", 'n')
   else
     if a:type == ':'
       call histadd(a:type, item)
