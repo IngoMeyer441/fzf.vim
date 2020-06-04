@@ -338,7 +338,7 @@ function! fzf#vim#files(dir, ...)
     endtry
   endif
 
-  let args.options = ['-m', '--prompt', strwidth(dir) < &columns / 2 - 20 ? dir : '> ']
+  let args.options = ['-m', '--tiebreak=end,length', '--prompt', strwidth(dir) < &columns / 2 - 20 ? dir : '> ']
   call s:merge_opts(args, get(g:, 'fzf_files_options', []))
   return s:fzf('files', args, a:000)
 endfunction
