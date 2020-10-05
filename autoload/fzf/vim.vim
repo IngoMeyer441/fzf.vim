@@ -871,7 +871,7 @@ function! s:btags_sink(lines)
     call add(qfl, {'filename': expand('%'), 'lnum': line('.'), 'text': getline('.')})
   endfor
   call s:fill_quickfix(qfl, 'cfirst')
-  normal! zz
+  normal! zvzz
 endfunction
 
 " query, [[tag commands], options]
@@ -945,7 +945,7 @@ function! s:tags_sink(lines)
     let [&magic, &wrapscan, &acd] = [magic, wrapscan, acd]
   endtry
   call s:fill_quickfix(qfl, 'clast')
-  normal! zz
+  normal! zvzz
 endfunction
 
 function! fzf#vim#tags(query, ...)
@@ -1484,4 +1484,3 @@ endfunction
 " ------------------------------------------------------------------
 let &cpo = s:cpo_save
 unlet s:cpo_save
-
