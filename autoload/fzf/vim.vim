@@ -457,7 +457,7 @@ function! fzf#vim#lines(...)
   return s:fzf('lines', {
   \ 'source':  lines,
   \ 'sink*':   s:function('s:line_handler'),
-  \ 'options': s:reverse_list(['+m', '--tiebreak=index', '--prompt', 'Lines> ', '--ansi', '--extended', '--nth='.nth.'..', '--tabstop=1', '--preview', 'which tagpreview >/dev/null && tagpreview --line {} '.&lines.' '.&columns, '--query', query])
+  \ 'options': s:reverse_list(['+m', '--tiebreak=index', '--prompt', 'Lines> ', '--ansi', '--extended', '--nth='.nth.'..', '--tabstop=1', '--query', query])
   \}, args)
 endfunction
 
@@ -502,7 +502,7 @@ function! fzf#vim#buffer_lines(...)
   return s:fzf('blines', {
   \ 'source':  s:buffer_lines(query),
   \ 'sink*':   s:function('s:buffer_line_handler'),
-  \ 'options': s:reverse_list(['+m', '--tiebreak=index', '--multi', '--prompt', 'BLines> ', '--ansi', '--extended', '--nth=2..', '--tabstop=1', '--preview', 'which tagpreview >/dev/null && tagpreview --bline {} '.&lines.' '.&columns.' '.expand('%'), '--query', query])
+  \ 'options': s:reverse_list(['+m', '--tiebreak=index', '--multi', '--prompt', 'BLines> ', '--ansi', '--extended', '--nth=2..', '--tabstop=1'])
   \}, args)
 endfunction
 
@@ -622,7 +622,7 @@ function! fzf#vim#gitfiles(args, ...)
     return s:fzf('gfiles', {
     \ 'source':  'git ls-files '.a:args.(s:is_win ? '' : ' | uniq'),
     \ 'dir':     root,
-    \ 'options': '-m --prompt "GitFiles> " '.get(g:, 'fzf_files_options', '')
+    \ 'options': '-m --prompt "GitFiles> "'
     \}, a:000)
   endif
 
@@ -796,13 +796,11 @@ function! fzf#vim#grep(grep_command, has_column, ...)
   let words   = empty(words) ? ['grep'] : words
   let name    = join(words, '-')
   let capname = join(map(words, 'toupper(v:val[0]).v:val[1:]'), '')
-  let textcol = a:has_column ? '4..' : '3..'
   let opts = {
   \ 'column':  a:has_column,
-  \ 'options': ['--ansi', '--delimiter', ':', '--nth', textcol.',..', '--prompt', capname.'> ',
+  \ 'options': ['--ansi', '--prompt', capname.'> ',
   \             '--multi', '--bind', 'alt-a:select-all,alt-d:deselect-all',
-  \             '--color', 'hl:4,hl+:12',
-  \             '--preview', '(file --mime {1} | grep -q ''text/'') && which tagpreview >/dev/null && tagpreview --ag {} '.&lines.' '.&columns]
+  \             '--delimiter', ':', '--preview-window', '+{2}-/2']
   \}
   function! opts.sink(lines)
     return s:ag_handler(a:lines, self.column)
@@ -815,74 +813,6 @@ function! fzf#vim#grep(grep_command, has_column, ...)
   finally
     let $FZF_DEFAULT_COMMAND = prev_default_command
   endtry
-endfunction
-
-" ------------------------------------------------------------------
-" Rg
-" ------------------------------------------------------------------
-function! s:rg_to_qf(line, has_column)
-  let parts = split(a:line, ':')
-  let text = join(parts[(a:has_column ? 3 : 2):], ':')
-  let dict = {'filename': &acd ? fnamemodify(parts[0], ':p') : parts[0], 'lnum': parts[1], 'text': text}
-  if a:has_column
-    let dict.col = parts[2]
-  endif
-  return dict
-endfunction
-
-function! s:rg_handler(lines, has_column)
-  if len(a:lines) < 2
-    return
-  endif
-
-  let cmd = s:action_for(a:lines[0], 'e')
-  let list = map(filter(a:lines[1:], 'len(v:val)'), 's:rg_to_qf(v:val, a:has_column)')
-  if empty(list)
-    return
-  endif
-
-  let first = list[0]
-  try
-    call s:open(cmd, first.filename)
-    execute first.lnum
-    if a:has_column
-      execute 'normal!' first.col.'|'
-    endif
-    normal! zz
-  catch
-  endtry
-
-  if len(list) > 1
-    call setqflist(list)
-    copen
-    wincmd p
-  endif
-endfunction
-
-" query, [[rg options], options]
-function! fzf#vim#rg(query, ...)
-  if type(a:query) != s:TYPE.string
-    return s:warn('Invalid query argument')
-  endif
-  let query = empty(a:query) ? '^(?=.)' : a:query
-  let args = copy(a:000)
-  let rg_opts = len(args) > 1 && type(args[0]) == s:TYPE.string ? remove(args, 0) : ''
-  try
-    let l:git_root = substitute(fugitive#repo().tree(), '/*$', '/', '')
-    let dir = l:git_root
-  catch
-    let dir = s:shortpath()
-  endtry
-  let command = rg_opts . ' ' . fzf#shellescape(query) . ' ' . dir
-  return call('fzf#vim#rg_raw', insert(args, command, 0))
-endfunction
-
-" rg command suffix, [options]
-function! fzf#vim#rg_raw(command_suffix, ...)
-  if !executable('rg')
-    return s:warn('rg is not found')
-  endif
-  return call('fzf#vim#grep', extend(['rg --column --smart-case --color always --colors "path:fg:green" --colors "path:style:bold" --colors "line:fg:yellow" --colors "line:style:bold" --colors "match:fg:black" --colors "match:bg:yellow" --colors "match:style:nobold" '.a:command_suffix, 1], a:000))
 endfunction
 
 " ------------------------------------------------------------------
@@ -958,7 +888,7 @@ function! fzf#vim#buffer_tags(query, ...)
     return s:fzf('btags', {
     \ 'source':  s:btags_source(tag_cmds),
     \ 'sink*':   s:function('s:btags_sink'),
-    \ 'options': s:reverse_list(['-m', '-d', '\t', '--with-nth', '1,4..', '-n', '1', '--tiebreak=begin,length', '--prompt', 'BTags> ', '--preview', 'which tagpreview >/dev/null && tagpreview {} '.&lines.' '.&columns, '--query', a:query])}, args)
+    \ 'options': s:reverse_list(['-m', '-d', '\t', '--with-nth', '1,4..', '-n', '1', '--tiebreak=begin,length', '--prompt', 'BTags> ', '--query', a:query, '--preview-window', '+{3}-/2'])}, args)
   catch
     return s:warn(v:exception)
   endtry
@@ -1141,7 +1071,7 @@ function! fzf#vim#marks(...)
   return s:fzf('marks', {
   \ 'source':  extend(list[0:0], map(list[1:], 's:format_mark(v:val)')),
   \ 'sink*':   s:function('s:mark_sink'),
-  \ 'options': '+m -x --ansi --header-lines 1 --tiebreak=begin --prompt "Marks> "'}, a:000)
+  \ 'options': '+m -x --ansi --tiebreak=index --header-lines 1 --tiebreak=begin --prompt "Marks> "'}, a:000)
 endfunction
 
 " ------------------------------------------------------------------
