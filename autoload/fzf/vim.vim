@@ -367,21 +367,21 @@ endfunction
 
 function! fzf#vim#files(dir, ...)
   let args = {}
+  let slash = (s:is_win && !&shellslash) ? '\\' : '/'
   if !empty(a:dir)
     if !isdirectory(expand(a:dir))
       return s:warn('Invalid directory')
     endif
-    let slash = (s:is_win && !&shellslash) ? '\\' : '/'
     let dir = substitute(a:dir, '[/\\]*$', slash, '')
     let args.dir = dir
   else
-    try
-      let l:git_root = substitute(fugitive#repo().tree(), '/*$', '/', '')
-      let dir = l:git_root
+    let git_root = s:get_git_root()
+    if !empty(git_root)
+      let dir = substitute(git_root, '[/\\]*$', slash, '')
       let args.dir = dir
-    catch
+    else
       let dir = s:shortpath()
-    endtry
+    endif
   endif
 
   let args.options = ['-m', '--tiebreak=end,length', '--prompt', strwidth(dir) < &columns / 2 - 20 ? dir : '> ']
