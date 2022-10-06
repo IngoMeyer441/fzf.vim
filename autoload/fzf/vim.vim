@@ -884,7 +884,7 @@ function! fzf#vim#buffer_tags(query, ...)
     let escaped = fzf#shellescape(expand('%'))
     let null = s:is_win ? 'nul' : '/dev/null'
     let tag_cmds = [
-      \ printf('ctags -f - --sort=no --excmd=number --language-force=%s %s 2> %s', &filetype, escaped, null),
+      \ printf('ctags -f - --sort=no --excmd=number --language-force=%s %s 2> %s', get({ 'cpp': 'c++' }, &filetype, &filetype), escaped, null),
       \ printf('ctags -f - --sort=no --excmd=number %s 2> %s', escaped, null)]
   endif
   if type(tag_cmds) != type([])
