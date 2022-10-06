@@ -378,7 +378,7 @@ function! fzf#vim#files(dir, ...)
     let dir = substitute(a:dir, '[/\\]*$', slash, '')
     let args.dir = dir
   else
-    let git_root = s:get_git_root()
+    let git_root = s:get_git_root('')
     if !empty(git_root)
       let dir = substitute(git_root, '[/\\]*$', slash, '')
       let args.dir = dir
