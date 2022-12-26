@@ -153,7 +153,7 @@ function! fzf#vim#with_preview(...)
     \ ? s:bin.preview
     \ : escape(s:bin.preview, '\'))
   else
-    let preview_cmd = fzf#shellescape(s:bin.preview)
+    let preview_cmd = 'bash ' . fzf#shellescape(s:bin.preview)
   endif
   if len(placeholder)
     let preview += ['--preview', preview_cmd.' '.placeholder]
@@ -615,6 +615,23 @@ function! s:get_git_root(dir)
   return v:shell_error ? '' : (len(a:dir) ? fnamemodify(a:dir, ':p') : root)
 endfunction
 
+function! s:version_requirement(val, min)
+  for idx in range(0, len(a:min) - 1)
+    let v = get(a:val, idx, 0)
+    if     v < a:min[idx] | return 0
+    elseif v > a:min[idx] | return 1
+    endif
+  endfor
+  return 1
+endfunction
+
+function! s:git_version_requirement(...)
+  if !exists('s:git_version')
+    let s:git_version = map(split(split(system('git --version'))[2], '\.'), 'str2nr(v:val)')
+  endif
+  return s:version_requirement(s:git_version, a:000)
+endfunction
+
 function! fzf#vim#gitfiles(args, ...)
   let dir = get(get(a:, 1, {}), 'dir', '')
   let root = s:get_git_root(dir)
@@ -623,10 +640,14 @@ function! fzf#vim#gitfiles(args, ...)
   endif
   let prefix = 'git -C ' . fzf#shellescape(root) . ' '
   if a:args != '?'
+    let source = prefix . 'ls-files -z'
+    if s:git_version_requirement(2, 31)
+      let source .= ' --deduplicate'
+    endif
     return s:fzf('gfiles', {
-    \ 'source':  prefix . 'ls-files '.a:args.(s:is_win ? '' : ' | uniq'),
+    \ 'source':  source,
     \ 'dir':     root,
-    \ 'options': '-m --prompt "GitFiles> "'
+    \ 'options': '-m --read0 --prompt "GitFiles> "'
     \}, a:000)
   endif
 
