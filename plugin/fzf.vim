@@ -58,6 +58,8 @@ call s:defs([
 \'command!      -bang -nargs=* Tags                             call fzf#vim#tags(<q-args>, fzf#vim#with_preview({ "placeholder": "--tag {2}:{-1}:{3..}" }), <bang>0)',
 \'command!      -bang -nargs=* BTags                            call fzf#vim#buffer_tags(<q-args>, fzf#vim#with_preview({ "placeholder": "{2}:{3..}" }), <bang>0)',
 \'command!      -bang -nargs=* Words                            call fzf#vim#words(<q-args>, <bang>0)',
+\'command!      -bang YanksBefore                               call fzf#vim#miniyank(1, <bang>0)',
+\'command!      -bang YanksAfter                                call fzf#vim#miniyank(0, <bang>0)',
 \'command! -bar -bang Snippets                                  call fzf#vim#snippets(<bang>0)',
 \'command! -bar -bang Commands                                  call fzf#vim#commands(<bang>0)',
 \'command! -bar -bang Marks                                     call fzf#vim#marks(<bang>0)',

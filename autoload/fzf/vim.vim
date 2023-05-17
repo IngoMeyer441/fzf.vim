@@ -1395,6 +1395,29 @@ function! fzf#vim#words(...)
 endfunction
 
 " ------------------------------------------------------------------
+" nvim-miniyank
+" ------------------------------------------------------------------
+
+" Slightly modified version of <https://github.com/bfredl/nvim-miniyank/issues/19#issuecomment-605194745>
+function! fzf#vim#miniyank(put_before, fullscreen) abort
+    function! s:fzf_miniyank_sink(opt, line) abort
+        let l:key = substitute(a:line, ' .*', '', '')
+        if empty(a:line) | return | endif
+        let l:yanks = miniyank#read()[l:key]
+        call miniyank#drop(l:yanks, a:opt)
+    endfunction
+
+    let l:put_action = a:put_before ? 'P' : 'p'
+    let l:name = a:put_before ? 'YanksBefore' : 'YanksAfter'
+    let l:spec = {
+    \ 'source': map(miniyank#read(), {k,v -> k.' '.join(v[0], '\n')}),
+    \ 'sink': {val -> s:fzf_miniyank_sink(l:put_action, val)},
+    \ 'options': ['--no-sort', '--tiebreak=begin,length', '--prompt', 'Yanks-' . l:put_action . '> ']
+    \ }
+    call s:fzf(l:name, l:spec, [a:fullscreen])
+endfunction
+
+" ------------------------------------------------------------------
 " fzf#vim#maps(mode, opts[with count and op])
 " ------------------------------------------------------------------
 function! s:align_pairs(list)
