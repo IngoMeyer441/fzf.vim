@@ -997,17 +997,17 @@ endfunction
 
 function! fzf#vim#files(dir, ...)
   let args = {}
-  let slash = (s:is_win && !&shellslash) ? '\\' : '/'
   if !empty(a:dir)
     if !isdirectory(expand(a:dir))
       return s:warn('Invalid directory')
     endif
+    let slash = (s:is_win && !&shellslash) ? '\\' : '/'
     let dir = substitute(a:dir, '[/\\]*$', slash, '')
     let args.dir = dir
   else
     let git_root = s:get_git_root('')
     if !empty(git_root)
-      let dir = substitute(git_root, '[/\\]*$', slash, '')
+      let dir = git_root
       let args.dir = dir
     else
       let dir = s:shortpath()
