@@ -1588,10 +1588,15 @@ function! fzf#vim#grep(grep_command, ...)
   let words   = empty(words) ? ['grep'] : words
   let name    = join(words, '-')
   let capname = join(map(words, 'toupper(v:val[0]).v:val[1:]'), '')
+  let root = s:get_git_root('')
+  if empty(root)
+    let root = s:shortpath()
+  endif
   let opts = {
   \ 'options': ['--ansi', '--prompt', capname.'> ',
   \             '--multi', '--bind', 'alt-a:select-all,alt-d:deselect-all',
-  \             '--delimiter', ':', '--preview-window', '+{2}/2']
+  \             '--delimiter', ':', '--preview-window', '+{2}/2'],
+  \ 'dir':     root
   \}
   if len(args) && type(args[0]) == s:TYPE.bool
     call remove(args, 0)
@@ -1629,12 +1634,17 @@ function! fzf#vim#grep2(command_prefix, query, ...)
   let words = empty(words) ? ['grep'] : words
   let name = join(words, '-')
   let fallback = s:is_win ? '' : ' || :'
+  let root = s:get_git_root('')
+  if empty(root)
+    let root = s:shortpath()
+  endif
   let opts = {
   \ 'source':  s:is_win ? 'cd .' : ':',
   \ 'options': ['--ansi', '--prompt', toupper(name).'> ', '--query', a:query,
   \             '--disabled',
   \             '--multi', '--bind', 'alt-a:select-all,alt-d:deselect-all',
-  \             '--delimiter', ':', '--preview-window', '+{2}/2']
+  \             '--delimiter', ':', '--preview-window', '+{2}/2'],
+  \ 'dir':     root
   \}
 
   let [opts, suffix] = s:grep_multi_line(opts)
