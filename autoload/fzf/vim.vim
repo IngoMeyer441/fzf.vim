@@ -1026,7 +1026,7 @@ function! fzf#vim#files(dir, ...)
     endif
   endif
 
-  let args.options = ['--scheme', 'path', '-m', '--prompt', strwidth(dir) < &columns / 2 - 20 ? dir : '> ']
+  let args.options = ['--scheme', 'path', '-m', '--prompt', strwidth(dir) < &columns / 2 - 20 ? dir . '> ' : '> ']
   let args._paste = 1
   let args._show = 'file'
   let args._hint = []
